@@ -1,0 +1,8 @@
+chromadb
+sentence-transformers
+pypdf
+python-docx
+openpyxl
+ollama
+pandas
+python-docx
