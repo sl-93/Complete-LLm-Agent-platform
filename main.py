@@ -33,9 +33,9 @@ def main():
     build_database()
 
     pipeline = AgentPipeline(embedding_model=EMBEDDING_MODEL,
-                             llm_model=LLM_MODEL,
                              db_path=DB_PATH,
                              collection_name=COLLECTION_NAME,
+                             llm_model=LLM_MODEL,
                              top_k=5)
 
     while True:

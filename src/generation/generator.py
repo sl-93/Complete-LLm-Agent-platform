@@ -1,101 +1,86 @@
 import json
 import ollama
-
 from src.generation.prompts import (SYSTEM_PROMPT,
-                                    USER_PROMPT)
+                                build_user_prompt)
 
 
 class Generator:
 
     def __init__(self,
-                 model="gemma4:e2b"):
+                 model: str = "gemma4:e2b"):
         
         self.model = model
 
-    def build_context(self,
-                      documents):
-
-        if not documents:
-            return "No relevant context was retrieved."
-
-        context_parts = []
-
-        for i, document in enumerate(documents,
-                                     start=1):
-
-            metadata = document.get("metadata",
-                                    {})
-
-            source = metadata.get("source",
-                                  "unknown")
-
-            page = metadata.get("page")
-
-            if page is not None:
-
-                source_info = (f"{source}, page {page}")
-
-            else:
-
-                source_info = source
-
-            context_parts.append(f"""[DOCUMENT {i}] Source: {source_info} {document["text"]} """)
-
-        return "\n".join(context_parts)
-
     def generate(self,
-                 question,
-                 documents,
-                 tools=None):
+                 question: str,
+                 documents: list,
+                 tool_schemas: list):
 
-        context = self.build_context(documents)
-
-        if tools is None:
-            tools = "No tools are currently available."
-
-        prompt = USER_PROMPT.format(question=question,
-                                    context=context,
-                                    tools=tools)
+        user_prompt = build_user_prompt(question=question,
+                                        documents=documents,
+                                        tool_schemas=tool_schemas)
 
         response = ollama.chat(model=self.model,
                                messages=[{"role": "system",
-                                          "content": SYSTEM_PROMPT},
+                                          "content": SYSTEM_PROMPT
+                                          },
                                           {"role": "user",
-                                           "content": prompt}],
+                                           "content": user_prompt}],
                                 options={"temperature": 0})
 
         content = response["message"]["content"]
 
-        return self.parse_response(content)
+        return self._parse_response(content)
 
-    def parse_response(self,
-                       content):
+    def generate_final_answer(self,
+                              question: str,
+                              documents: list,
+                              tool_result=None):
+
+        context_parts = []
+
+        for document in documents:
+            context_parts.append(document.get("text", ""))
+
+        context = "\n\n".join(context_parts)
+
+        prompt = f"""
+                    Answer the user's question.
+
+                    USER QUESTION:
+                    {question}
+
+                    RETRIEVED CONTEXT:
+                    {context if context else "No relevant context."}
+
+                    TOOL RESULT:
+                    {tool_result if tool_result is not None else "No tool was used."}
+
+                    Use the retrieved context and tool result when relevant.
+
+                    Do not invent information.
+
+                    Return only the final answer.
+                """
+
+        response = ollama.chat(model=self.model,
+                               messages=[{"role": "system",
+                                          "content": ("You are a helpful assistant. "
+                                                      "Answer accurately and concisely.")},
+                                        {"role": "user",
+                                         "content": prompt}],
+                                options={"temperature": 0})
+
+        return response["message"]["content"]
+
+    @staticmethod
+    def _parse_response(content: str):
 
         try:
+            return json.loads(content)
 
-            result = json.loads(content)
+        except json.JSONDecodeError:
 
-            required_fields = ["strategy",
-                               "use_context",
-                               "context_sufficient",
-                               "requires_tool",
-                               "tool_name",
-                               "answer"]
-
-            for field in required_fields:
-
-                if field not in result:
-
-                    raise ValueError(f"Missing field: {field}")
-
-            return result
-
-        except (json.JSONDecodeError,
-                ValueError):
-
-            return {"strategy": "direct",
-                    "use_context": False,
-                    "context_sufficient": False,
-                    "requires_tool": False,
-                    "tool_name": None,
+            return {"type": "final_answer",
+                    "strategy": "direct",
                     "answer": content}

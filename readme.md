@@ -623,8 +623,8 @@ The project is developed incrementally.
 * [ ] Multi-query retrieval
 * [ ] Reranking
 * [ ] Retrieval evaluation
-* [ ] Tool calling
-* [ ] Tool registry
+* [x] Tool calling
+* [x] Tool registry
 * [ ] Agent runtime
 * [ ] ReAct-style agents
 * [ ] Planning
