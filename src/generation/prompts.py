@@ -144,8 +144,14 @@ Return ONLY valid JSON.
 """
 
 
-def build_user_prompt(question, documents, tool_schemas):
+def build_user_prompt(question, 
+                      documents, 
+                      tool_schemas):
+    
     context_parts = []
+
+    # Extract actual retrieved documents
+    documents = documents.get("documents", [])
 
     for i, document in enumerate(documents, start=1):
         metadata = document.get("metadata", {})
@@ -164,14 +170,14 @@ def build_user_prompt(question, documents, tool_schemas):
     context = "\n\n".join(context_parts)
 
     return f"""
-               USER QUESTION:
-               {question}
+                USER QUESTION:
+                {question}
 
-               RETRIEVED CONTEXT:
-               {context if context else "No context retrieved."}
+                RETRIEVED CONTEXT:
+                {context if context else "No context retrieved."}
 
-               AVAILABLE TOOLS:
-               {tool_schemas}
+                AVAILABLE TOOLS:
+                {tool_schemas}
 
-               Determine the appropriate action and return ONLY valid JSON.
+                Determine the appropriate action and return ONLY valid JSON.
             """

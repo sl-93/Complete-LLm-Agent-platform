@@ -6,3 +6,5 @@ openpyxl
 ollama
 pandas
 python-docx
+rank-bm25
+numpy

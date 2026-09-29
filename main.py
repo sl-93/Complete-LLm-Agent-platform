@@ -32,11 +32,14 @@ def main():
 
     build_database()
 
-    pipeline = AgentPipeline(embedding_model=EMBEDDING_MODEL,
-                             db_path=DB_PATH,
-                             collection_name=COLLECTION_NAME,
-                             llm_model=LLM_MODEL,
-                             top_k=5)
+    pipeline = AgentPipeline(EMBEDDING_MODEL,
+                             DB_PATH,
+                             COLLECTION_NAME,
+                             LLM_MODEL,
+                             query_mode = "original",   # original | rewrite | multi_query
+                             retrieval_mode = "hybrid", # dense | bm25 | hybrid
+                             top_k = 5,
+                             num_queries = 3)
 
     while True:
 

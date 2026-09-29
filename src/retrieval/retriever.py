@@ -2,7 +2,7 @@ from src.embeddings.embedder import Embedder
 from src.vectorstore.chroma_store import ChromaStore
 
 
-class Retriever:
+class DenseRetriever:
 
     def __init__(self,
                  embedding_model,
@@ -25,15 +25,20 @@ class Retriever:
         documents = results["documents"][0]
         metadatas = results["metadatas"][0]
         distances = results["distances"][0]
+        ids = results.get("ids", [[]])[0]
 
-        retrieved_documents = []
+        retrieved = []
 
-        for document, metadata, distance in zip(documents,
-                                                metadatas,
-                                                distances):
+        for i, document in enumerate(documents):
 
-            retrieved_documents.append({"text": document,
-                                        "metadata": metadata,
-                                        "distance": distance})
-            
-        return retrieved_documents
+            retrieved.append({"id": ids[i] if i < len(ids) else None,
+                              "text": document,
+                              "metadata": (metadatas[i]
+                                           if i < len(metadatas)
+                                           else {}),
+                                "score": (distances[i]
+                                          if i < len(distances)
+                                          else None),
+                                "retrieval_method": "dense",})
+
+        return retrieved

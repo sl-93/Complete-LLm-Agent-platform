@@ -1,4 +1,4 @@
-from src.retrieval.retriever import Retriever
+from src.retrieval.advanced_retriever import AdvancedRetriever
 from src.generation.generator import Generator
 from src.tools.registry import execute_tool
 from src.tools.schemas import TOOL_SCHEMAS
@@ -11,12 +11,21 @@ class AgentPipeline:
                  db_path: str,
                  collection_name: str,
                  llm_model: str = "gemma4:e2b",
-                 top_k: int = 5):
+                 query_mode = "original",
+                 retrieval_mode = "dense",
+                 rerank = "False",
+                 top_k: int = 5,
+                 num_queries: int = 3,
+                 reranker_model: str = ("cross-encoder/ms-marco-MiniLM-L-6-v2")):
 
-        self.retriever = Retriever(embedding_model=embedding_model,
-                                   db_path=db_path,
-                                   collection_name=collection_name,
-                                   top_k=top_k)
+        self.retriever = AdvancedRetriever(db_path=db_path,
+                                           collection_name=collection_name,
+                                           embedding_model=embedding_model,
+                                           llm_model=llm_model,
+                                           query_mode=query_mode,
+                                           retrieval_mode=retrieval_mode,
+                                           top_k=top_k,
+                                           num_queries=num_queries)
 
         self.generator = Generator(model=llm_model)
 
