@@ -617,12 +617,10 @@ The project is developed incrementally.
 * [x] ChromaDB integration
 * [x] Basic semantic retrieval
 * [x] LLM generation with retrieved context
-* [ ] Metadata-aware retrieval
-* [ ] Hybrid search
-* [ ] Query rewriting
-* [ ] Multi-query retrieval
-* [ ] Reranking
-* [ ] Retrieval evaluation
+* [x] Metadata-aware retrieval
+* [x] Hybrid search
+* [x] Query rewriting
+* [x] Multi-query retrieval
 * [x] Tool calling
 * [x] Tool registry
 * [ ] Agent runtime
