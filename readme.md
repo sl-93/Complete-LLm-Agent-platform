@@ -45,8 +45,7 @@ Advanced RAG
  ├── Hybrid Search
  ├── Metadata Filtering
  ├── Query Rewriting
- ├── Multi-Query Retrieval
- └── Reranking
+ └── Multi-Query Retrieval
  │
  ▼
 Tool Calling
@@ -228,9 +227,6 @@ Complete-LLm-Agent-platform/
 │   ├── memory/
 │   │   └── ...
 │   │
-│   ├── evaluation/
-│   │   └── ...
-│   │
 │   └── config/
 │       └── ...
 │
@@ -351,24 +347,10 @@ Q1    Q2    Q3
  └─────┼─────┘
        ↓
  Combined Results
-       ↓
-     Reranker
+      
 ```
 
-### Reranking
 
-Initial retrieval will return a larger candidate set, which can then be reranked using a more accurate model.
-
-```text
-Query
-  ↓
-Top 20 Candidates
-  ↓
-Reranker
-  ↓
-Top 3 Relevant Chunks
-  ↓
-LLM
 ```
 
 ---
