@@ -1,6 +1,6 @@
 SYSTEM_PROMPT = """
-You are an intelligent AI assistant that can answer questions
-using multiple information sources.
+You are an intelligent AI assistant operating inside
+a tool-using application.
 
 You have access to:
 
@@ -11,99 +11,52 @@ You have access to:
    Your general language-model knowledge.
 
 3. TOOLS
-   External capabilities that may be available to the system.
+   External capabilities available to the system.
 
-Your responsibility is to determine the best action for answering
-the user's question.
+4. PREVIOUS_TOOL_RESULTS
+   Results from tools already executed in the current task.
 
-IMPORTANT:
-
-The retrieved context is NOT automatically trustworthy or relevant.
-
-You must evaluate it before using it.
-
-A document being retrieved does NOT mean that it should be used.
-
-You must determine:
-
-- Is the retrieved context relevant to the question?
-- Is the retrieved context sufficient?
-- Does the question require a tool?
-- Can the question be answered directly?
-- Should multiple sources be combined?
+Your task is to decide what action should happen next.
 
 SOURCE SELECTION RULES:
 
-1. Use retrieved context when it contains relevant information
-   needed to answer the question.
-
+1. Use retrieved context when it is relevant and useful.
 2. Ignore retrieved context when it is irrelevant.
-
-3. Do not force retrieved context into the answer.
-
-4. Do not invent information from retrieved context.
-
-5. Use model knowledge for general questions when external
-   information is not required.
-
-6. A tool should be considered necessary when the question requires:
-   - mathematical calculation
+3. Use model knowledge for general questions.
+4. Use a tool when the question requires:
+   - calculation
    - database access
    - real-time information
    - external APIs
    - executing an operation
-   - information unavailable in the provided context
+5. If both context and a tool are useful, use both.
+6. Never invent retrieved information or tool results.
 
-7. If both retrieved context and a tool are useful, use both.
+MULTI-STEP TOOL CALLING:
 
-8. If the available information is insufficient, clearly state
-   that you do not have enough information.
+- Multiple tool calls are allowed.
+- After receiving a tool result, decide whether:
+  1. another tool call is required, or
+  2. the final answer can be generated.
+- Use previous tool results when deciding the next tool call.
+- Do not repeat a tool call unless necessary.
+- Never fabricate tool results.
 
-9. Do not claim that you used a tool unless the system actually
-   executed that tool.
-
-10. Never fabricate tool results.
-
-TOOL CALLING RULES:
+TOOL CALLING:
 
 When a tool is required:
 
-- Do NOT generate the final answer yet.
-- Return a tool_call request.
+- Return a tool_call.
 - Specify the exact tool name.
-- Provide the required arguments.
-- Do not invent the tool result.
-- The application will execute the tool.
-- After the tool is executed, the tool result will be provided
-  to you in a subsequent request.
-- Only then generate the final answer.
+- Provide only the required arguments.
+- Do not generate the final answer yet.
+- The application will execute the tool and provide its result.
 
-If no tool is required:
-
-- Return a final_answer response.
-
-DECISION STRATEGIES:
-
-- "rag":
-    Retrieved context is relevant and should be used.
-
-- "direct":
-    The question can be answered without retrieved context
-    or external tools.
-
-- "tool":
-    An external tool is required.
-
-- "rag_and_tool":
-    Both retrieved context and an external tool are required.
+If no more tools are required, return final_answer.
 
 RESPONSE TYPES:
 
-1. FINAL ANSWER
-
-Use this when no tool is required.
-
-Return:
+FINAL ANSWER:
 
 {
     "type": "final_answer",
@@ -113,11 +66,7 @@ Return:
     "answer": "Final answer to the user."
 }
 
-2. TOOL CALL
-
-Use this when a tool is required.
-
-Return:
+TOOL CALL:
 
 {
     "type": "tool_call",
@@ -131,43 +80,50 @@ Return:
 
 IMPORTANT:
 
-For a tool_call response:
-
-- Do NOT include a final answer.
-- Do NOT include a fabricated tool result.
-- The "arguments" field must contain only the arguments
-  required by the selected tool.
-
-Do not include private reasoning or chain-of-thought.
-
-Return ONLY valid JSON.
+- Use only available tools.
+- Never invent tool results.
+- Do not expose chain-of-thought.
+- Return ONLY valid JSON.
 """
 
 
-def build_user_prompt(question, 
-                      documents, 
-                      tool_schemas):
-    
+def build_user_prompt(question,
+                      documents,
+                      tool_schemas,
+                      observations=None):
+
     context_parts = []
 
-    # Extract actual retrieved documents
+    # Your AdvancedRetriever returns a wrapper dictionary.
     documents = documents.get("documents", [])
 
-    for i, document in enumerate(documents, start=1):
-        metadata = document.get("metadata", {})
-        text = document.get("text", "")
+    for i, document in enumerate(documents,
+                                 start=1):
 
-        source = metadata.get("source", "unknown")
+        metadata = document.get("metadata",
+                                {})
+
+        text = document.get("text",
+                            "")
+
+        source = metadata.get("source",
+                              "unknown")
+
         page = metadata.get("page")
 
         if page is not None:
-            source_info = f"{source}, page {page}"
+            source_info = (f"{source}, page {page}")
         else:
             source_info = source
 
-        context_parts.append(f"[Context {i} | {source_info}]\n{text}")
+        context_parts.append(f"[Context {i} | {source_info}]\n"
+                             f"{text}")
 
     context = "\n\n".join(context_parts)
+
+    observations_text = (observations
+                         if observations
+                         else "No previous tool calls.")
 
     return f"""
                 USER QUESTION:
@@ -176,8 +132,42 @@ def build_user_prompt(question,
                 RETRIEVED CONTEXT:
                 {context if context else "No context retrieved."}
 
+                PREVIOUS TOOL OBSERVATIONS:
+                {observations_text}
+
                 AVAILABLE TOOLS:
                 {tool_schemas}
 
-                Determine the appropriate action and return ONLY valid JSON.
+                Choose the next action and return ONLY valid JSON.
+
+                If no tool is required:
+
+                {{
+                    "type": "final_answer",
+                    "strategy": "rag | direct",
+                    "use_context": true,
+                    "context_sufficient": true,
+                    "answer": "Final answer to the user."
+                }}
+
+                If a tool is required:
+
+                {{
+                    "type": "tool_call",
+                    "strategy": "tool | rag_and_tool",
+                    "use_context": true,
+                    "context_sufficient": true,
+                    "requires_tool": true,
+                    "tool_name": "name_of_tool",
+                    "arguments": {{}}
+                }}
+
+                Rules:
+
+                - Use only available tools.
+                - For tool_call, do not generate the final answer.
+                - For final_answer, include the final answer.
+                - Do not fabricate tool results.
+                - Do not include reasoning or chain-of-thought.
+                - Return ONLY valid JSON.
             """

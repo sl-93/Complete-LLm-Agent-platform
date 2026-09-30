@@ -14,11 +14,13 @@ class Generator:
     def generate(self,
                  question: str,
                  documents: list,
-                 tool_schemas: list):
+                 tool_schemas: list,
+                 observations=None):
 
         user_prompt = build_user_prompt(question=question,
                                         documents=documents,
-                                        tool_schemas=tool_schemas)
+                                        tool_schemas=tool_schemas,
+                                        observations=observations)
 
         response = ollama.chat(model=self.model,
                                messages=[{"role": "system",

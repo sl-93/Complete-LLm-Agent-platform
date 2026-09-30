@@ -5,6 +5,7 @@ from src.tools.schemas import TOOL_SCHEMAS
 
 
 class AgentPipeline:
+    MAX_ITERATIONS = 5
 
     def __init__(self,
                  embedding_model: str,
@@ -13,10 +14,8 @@ class AgentPipeline:
                  llm_model: str = "gemma4:e2b",
                  query_mode = "original",
                  retrieval_mode = "dense",
-                 rerank = "False",
                  top_k: int = 5,
-                 num_queries: int = 3,
-                 reranker_model: str = ("cross-encoder/ms-marco-MiniLM-L-6-v2")):
+                 num_queries: int = 3):
 
         self.retriever = AdvancedRetriever(db_path=db_path,
                                            collection_name=collection_name,
@@ -41,47 +40,74 @@ class AgentPipeline:
         # 2. Ask LLM what to do
         # --------------------------------
 
-        decision = self.generator.generate(question=question,
-                                           documents=documents,
-                                           tool_schemas=TOOL_SCHEMAS)
+        observations = []
+        for step in range(self.MAX_ITERATIONS):
 
-        # --------------------------------
-        # 3. Direct / RAG answer
-        # --------------------------------
-
-        if decision["type"] == "final_answer":
-
-            return {"answer": decision["answer"],
-                    "strategy": decision.get("strategy",
-                                             "direct"),
-                    "tool_used": False}
-
-        # --------------------------------
-        # 4. Tool call
-        # --------------------------------
-
-        if decision["type"] == "tool_call":
-
-            tool_name = decision["tool_name"]
-            arguments = decision["arguments"]
-
-            tool_result = execute_tool(tool_name,
-                                       arguments)
+            decision = self.generator.generate(question=question,
+                                               documents=documents,
+                                               tool_schemas=TOOL_SCHEMAS,
+                                               observations=self._format_observations(observations))
 
             # --------------------------------
-            # 5. Give tool result back to LLM
+            # 3. Direct / RAG answer
             # --------------------------------
 
-            final_answer = (self.generator.generate_final_answer(question=question,
-                                                                 documents=documents,
-                                                                 tool_result=tool_result))
+            if decision["type"] == "final_answer":
 
-            return {"answer": final_answer,
-                    "strategy": decision.get("strategy",
-                                             "tool"),
-                    "tool_used": True,
-                    "tool_name": tool_name,
-                    "tool_result": tool_result}
+                return {"answer": decision["answer"],
+                        "strategy": decision.get("strategy",
+                                                 "direct"),
+                        "tool_used": False}
 
-        raise ValueError(f"Unknown decision type: "
-                         f"{decision.get('type')}")
+            # --------------------------------
+            # 4. Tool call
+            # --------------------------------
+
+            if decision["type"] == "tool_call":
+
+                tool_name = decision["tool_name"]
+                arguments = decision["arguments"]
+
+
+                try:
+
+                    tool_result = execute_tool(tool_name,
+                                               arguments)
+
+                    observation = {"step": step + 1,
+                                   "tool": tool_name,
+                                   "arguments": arguments,
+                                   "result": tool_result}
+
+                except Exception as e:
+
+                    observation = {"step": step + 1,
+                                   "tool": tool_name,
+                                   "arguments": arguments,
+                                   "error": str(e)}
+
+                observations.append(observation)
+
+                continue
+                    
+        # --------------------------------
+        # MAX ITERATIONS
+        # --------------------------------
+
+        return ("The agent could not complete "
+                "the task within the maximum "
+                "number of tool calls.")
+
+    @staticmethod
+    def _format_observations(observations):
+
+        if not observations:
+            return "No previous tool calls."
+
+        formatted = []
+
+        for observation in observations:
+
+            formatted.append(str(observation))
+
+        return "\n".join(formatted)        
