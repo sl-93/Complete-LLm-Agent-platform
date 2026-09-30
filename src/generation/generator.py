@@ -39,7 +39,7 @@ class Generator:
 
         context_parts = []
 
-        for document in documents:
+        for document in documents["documents"]:
             context_parts.append(document.get("text", ""))
 
         context = "\n\n".join(context_parts)
