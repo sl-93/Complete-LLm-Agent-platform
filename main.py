@@ -49,14 +49,13 @@ def main():
                                 "quit"}:
             break
 
-        result = pipeline.answer(question)
+        result, strategy = pipeline.answer(question)
 
-        print("\nStrategy:",
-              result["strategy"])
+        print("\nStrategy:",strategy)
 
         print("\nAnswer:")
 
-        print(result["answer"])
+        print(result.final_answer)
 
 
 if __name__ == "__main__":
