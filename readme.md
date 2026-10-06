@@ -605,8 +605,8 @@ The project is developed incrementally.
 * [x] Multi-query retrieval
 * [x] Tool calling
 * [x] Tool registry
-* [ ] Agent runtime
-* [ ] ReAct-style agents
+* [x] Agent runtime
+* [x] ReAct-style agents
 * [ ] Planning
 * [ ] Short-term memory
 * [ ] Long-term memory
