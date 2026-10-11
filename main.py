@@ -55,7 +55,7 @@ def main():
 
         print("\nAnswer:")
 
-        print(result.final_answer)
+        print(result)
 
 
 if __name__ == "__main__":

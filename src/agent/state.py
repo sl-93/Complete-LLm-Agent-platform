@@ -6,7 +6,8 @@ class AgentState:
         
         self.question = question
         self.documents = documents
-
+        self.plan = []
+        self.current_step = 0
         self.observations = []
         self.step = 0
         self.final_answer = None

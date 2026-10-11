@@ -1,7 +1,9 @@
 import json
 import ollama
 from src.generation.prompts import (SYSTEM_PROMPT,
-                                build_user_prompt)
+                                    build_user_prompt,
+                                    PLAN_SYSTEM_PROMPT,
+                                    build_plan_prompt)
 
 
 class Generator:
@@ -86,3 +88,18 @@ class Generator:
             return {"type": "final_answer",
                     "strategy": "direct",
                     "answer": content}
+
+    def generate_plan(self,
+                      question):
+
+        user_prompt = build_plan_prompt(question)
+
+        response = ollama.chat(model=self.model,
+                               messages=[{"role": "system",
+                                          "content":PLAN_SYSTEM_PROMPT},
+                                          {"role": "user",
+                                           "content": user_prompt}],
+                                           format = "json",
+                                           options={"temprature": 0})
+
+        return response["message"]["content"]

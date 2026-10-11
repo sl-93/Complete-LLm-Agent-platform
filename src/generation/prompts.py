@@ -1,3 +1,38 @@
+PLAN_SYSTEM_PROMPT = """
+You are a task planner for an AI agent.
+
+Break the user's request into a short, ordered list
+of actionable steps.
+
+Rules:
+- Use as few steps as reasonably possible.
+- Each step must contribute to the user's goal.
+- Steps must be executable by the agent using its
+  available tools, retrieved context, or model knowledge.
+- Do not execute tools or invent results.
+- For simple questions, return a single step.
+- Return ONLY valid JSON.
+
+Format:
+{
+    "plan": [
+        "First step",
+        "Second step"
+    ]
+}
+"""
+
+
+def build_plan_prompt(question):
+    return f"""
+                USER GOAL:
+                {question}
+
+                Create a concise plan to achieve this goal.
+                Return ONLY valid JSON in the specified format.
+            """
+
+
 SYSTEM_PROMPT = """
 You are an intelligent AI assistant operating inside
 a tool-using application.

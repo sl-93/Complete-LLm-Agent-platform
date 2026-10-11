@@ -1,6 +1,7 @@
 from src.agent.agent import Agent
 from src.retrieval.advanced_retriever import AdvancedRetriever
 from src.generation.generator import Generator
+from src.agent.planner import Planner
 
 
 class AgentPipeline:
@@ -25,13 +26,16 @@ class AgentPipeline:
                                            num_queries=num_queries)
 
         self.generator = Generator(model=llm_model)
+        self.planner = Planner(self.generator)
 
     def answer(self,
                question):
 
         agent = Agent(self.generator)
         documents = self.retriever.retrieve(question)
+        plan = self.planner.create_plan(question)
 
         return agent.run(question=question,
-                         documents=documents)
+                         documents=documents,
+                         plan=plan)
 
