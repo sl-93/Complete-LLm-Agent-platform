@@ -38,9 +38,6 @@ class Generator:
 
         content = response["message"]["content"]
 
-        self.conversation_history = conversation_history
-        self.long_term_memories = long_term_memories
-
         return self._parse_response(content)
 
 

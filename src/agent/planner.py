@@ -1,6 +1,4 @@
 import json
-from src.generation.prompts import (PLAN_SYSTEM_PROMPT,
-                                    build_plan_prompt)
 
 
 class Planner:
