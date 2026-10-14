@@ -607,9 +607,9 @@ The project is developed incrementally.
 * [x] Tool registry
 * [x] Agent runtime
 * [x] ReAct-style agents
-* [ ] Planning
-* [ ] Short-term memory
-* [ ] Long-term memory
+* [x] Planning
+* [x] Short-term memory
+* [x] Long-term memory
 * [ ] Multi-agent orchestration
 * [ ] Agent evaluation
 * [ ] Observability
