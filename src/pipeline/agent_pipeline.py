@@ -29,9 +29,11 @@ class AgentPipeline:
         self.planner = Planner(self.generator)
 
     def answer(self,
-               question):
+               question,
+               user_id=None):
 
-        agent = Agent(self.generator)
+        agent = Agent(self.generator,
+                      user_id=user_id)
         documents = self.retriever.retrieve(question)
         plan = self.planner.create_plan(question)
 

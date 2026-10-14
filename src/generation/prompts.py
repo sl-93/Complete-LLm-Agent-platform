@@ -125,7 +125,15 @@ IMPORTANT:
 def build_user_prompt(question,
                       documents,
                       tool_schemas,
-                      observations=None):
+                      observations=None,
+                      conversation_history=None,
+                      long_term_memories=None):
+
+    history_text = "\n".join(f"{message['role']}: {message['content']}"
+                             for message in (conversation_history or []))
+
+    memories_text = "\n".join(memory["content"]
+                              for memory in (long_term_memories or []))
 
     context_parts = []
 
@@ -172,6 +180,12 @@ def build_user_prompt(question,
 
                 AVAILABLE TOOLS:
                 {tool_schemas}
+
+                RECENT CONVERSATION:
+                {history_text if history_text else "No previous conversation."}
+
+                RELEVANT LONG-TERM MEMORIES:
+                {memories_text if memories_text else "No relevant memories found."}
 
                 Choose the next action and return ONLY valid JSON.
 

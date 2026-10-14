@@ -17,12 +17,16 @@ class Generator:
                  question: str,
                  documents: list,
                  tool_schemas: list,
-                 observations=None):
+                 observations=None,
+                 conversation_history=None,
+                 long_term_memories=None):
 
         user_prompt = build_user_prompt(question=question,
                                         documents=documents,
                                         tool_schemas=tool_schemas,
-                                        observations=observations)
+                                        observations=observations,
+                                        conversation_history=conversation_history,
+                                        long_term_memories=long_term_memories)
 
         response = ollama.chat(model=self.model,
                                messages=[{"role": "system",
@@ -34,48 +38,11 @@ class Generator:
 
         content = response["message"]["content"]
 
+        self.conversation_history = conversation_history
+        self.long_term_memories = long_term_memories
+
         return self._parse_response(content)
 
-    def generate_final_answer(self,
-                              question: str,
-                              documents: list,
-                              tool_result=None):
-
-        context_parts = []
-
-        for document in documents["documents"]:
-            context_parts.append(document.get("text", ""))
-
-        context = "\n\n".join(context_parts)
-
-        prompt = f"""
-                    Answer the user's question.
-
-                    USER QUESTION:
-                    {question}
-
-                    RETRIEVED CONTEXT:
-                    {context if context else "No relevant context."}
-
-                    TOOL RESULT:
-                    {tool_result if tool_result is not None else "No tool was used."}
-
-                    Use the retrieved context and tool result when relevant.
-
-                    Do not invent information.
-
-                    Return only the final answer.
-                """
-
-        response = ollama.chat(model=self.model,
-                               messages=[{"role": "system",
-                                          "content": ("You are a helpful assistant. "
-                                                      "Answer accurately and concisely.")},
-                                        {"role": "user",
-                                         "content": prompt}],
-                                options={"temperature": 0})
-
-        return response["message"]["content"]
 
     @staticmethod
     def _parse_response(content: str):
