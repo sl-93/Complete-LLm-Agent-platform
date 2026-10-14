@@ -1,15 +1,22 @@
 from src.agent.state import AgentState
 from src.tools.registry import execute_tool
 from src.tools.schemas import TOOL_SCHEMAS
+from src.memory.conversation_memory import ConversationMemory
+from src.memory.long_term_memory import LongTermMemory
 
 
 class Agent:
     MAX_ITERATIONS = 5
 
     def __init__(self,
-                 generator):
+                 generator,
+                 user_id,
+                 long_term_memory=None):
         
         self.generator = generator
+        self.user_id= user_id
+        self.conversation_memory = ConversationMemory()
+        self.long_term_memory = (long_term_memory or LongTermMemory())
 
 
     def run(self, 
@@ -33,16 +40,37 @@ class Agent:
             else:
                 execution_question = state.question
 
+            conversation_history = (self.conversation_memory.get_messages())
+
+            long_term_memories = self.long_term_memory.search(user_id=self.user_id)
+            print("conersation memory:", conversation_history)
+            print("long term memory:", long_term_memories)
+
             decision = self.generator.generate(question=execution_question,
                                                documents=state.documents,
                                                tool_schemas=TOOL_SCHEMAS,
-                                               observations=state.observations)
+                                               observations=state.observations,
+                                               conversation_history=conversation_history,
+                                               long_term_memories=long_term_memories)
 
             response_type = decision.get("type")
 
             if response_type == "final_answer":
                 state.final_answer = decision.get("answer",
                                                   "")
+                
+                self.conversation_memory.add("user",
+                                             question)
+
+                self.conversation_memory.add("assistant",
+                                             state.final_answer)
+                
+                self.long_term_memory.add(self.user_id,
+                                          question)
+                
+                self.long_term_memory.add(self.user_id,
+                                          state.final_answer)
+                
                 if not state.plan:
                     return state.final_answer, decision.get("strategy")
                 

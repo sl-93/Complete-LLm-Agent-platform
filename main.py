@@ -49,7 +49,8 @@ def main():
                                 "quit"}:
             break
 
-        result, strategy = pipeline.answer(question)
+        result, strategy = pipeline.answer(question,
+                                           user_id = 1)
 
         print("\nStrategy:",strategy)
 
